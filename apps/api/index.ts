@@ -2,20 +2,61 @@ import express from 'express'
 import jwt from 'jsonwebtoken'
 import { prismaClient } from "store/client"
 import { AuthInput } from './types';
+import { authMiddleware } from './middleware';
 
 const app = express()
 app.use(express.json());
 
-app.post("/website", (req, res) => {
-    res.json({ msg: "req" });
+app.post("/website", authMiddleware, async (req, res) => {
+    const userId = req.userId;
+    if (!req.body.url) {
+        res.status(411).json({
+            message: "URL not found"
+        })
+    }
+    try {
+        const website = await prismaClient.website.create({
+            data: {
+                url: req.body.url,
+                timeAdded: new Date(),
+                userId: userId
+            }
+        })
+        res.status(200).json({
+            message: "Website added successfully",
+            id: website.id
+        })
+    } catch (e) {
+        res.status(403).json({
+            message: "Database error. Try again!!!",
+            Error: e
+        })
+    }
 })
 
-app.get("/status/:websiteId", (req, res) => {
+app.get("/status/:websiteId", authMiddleware, async (req, res) => {
+    const websiteId = req.params.websiteId;
 
+    const website = await prismaClient.website.findMany({
+        where: {
+            id: websiteId,
+            userId: req.userId
+        },
+        include: {
+            ticks: {
+                orderBy: [
+                    {
+                        createdAt: 'desc'
+                    }
+                ],
+                take: 1
+            }
+        }
+    })
 })
 
 app.post("/user/signup", async (req, res) => {
-    const data = AuthInput.safeParse(req.body.data);
+    const data = AuthInput.safeParse(req.body);
     if (!data.success) {
         res.status(403).json({
             message: "Wrong Input"
@@ -24,12 +65,14 @@ app.post("/user/signup", async (req, res) => {
     try {
         const user = await prismaClient.user.create({
             data: {
-                email: data.data?.email,
-                password: data.data?.password
+                email: data.data?.email!,
+                password: data.data?.password!
             }
         })
+        let token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!);
+
         res.status(200).json({
-            id: user.id,
+            token: token,
             message: "User Created Successfully"
         })
     } catch (e) {
@@ -41,25 +84,28 @@ app.post("/user/signup", async (req, res) => {
 })
 
 app.post("/user/signin", async (req, res) => {
-    const data = AuthInput.safeParse(req.body.data);
+    const data = AuthInput.safeParse(req.body);
     if (!data.success) {
         res.status(403).json({
             message: "Wrong Input"
         })
     }
     try {
-        const user = await prismaClient.user.findUnique({
+        const user = (await prismaClient.user.findMany({
             where: {
                 email: data.data?.email,
             },
-        })
-        if (user.password !== data.data?.password) {
+        }))[0]
+
+        if (user?.password !== data.data?.password) {
             res.status(403).json({
                 message: "Incorrect Password"
             })
         }
+        let token = jwt.sign({ id: user?.id }, process.env.JWT_SECRET!);
+
         res.status(200).json({
-            id: user.id,
+            token: token,
             message: "User Loggedin"
         })
     } catch (e) {
@@ -70,6 +116,6 @@ app.post("/user/signin", async (req, res) => {
     }
 })
 
-app.listen(process.env.PORT || 3000, () => {
+app.listen(process.env.PORT || 3001, () => {
     console.log("Started backend on port 3000");
 })
