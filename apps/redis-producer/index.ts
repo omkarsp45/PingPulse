@@ -1,4 +1,5 @@
 import { createClient } from 'redis';
+import { prismaClient } from 'store/client'
 
 const client = createClient();
 
@@ -7,13 +8,14 @@ client.on('error', err => console.log('Redis Client Error', err));
 await client.connect();
 
 async function xAdd() {
-    const res1 = await client.xAdd(
-        'uptime:website', '*', {
-        'url': 'https://facebook.com',
-        'websiteId': '2'
-    }
-    );
-    console.log(res1);
+    const website = await prismaClient.website.findMany({
+        select: {
+            id: true,
+            url: true
+        }
+    })
+
+    console.log(website)
 }
 
 xAdd()

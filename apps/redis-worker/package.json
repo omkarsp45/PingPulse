@@ -1,13 +1,10 @@
 {
-  "name": "redis",
+  "name": "redis-worker",
   "module": "index.ts",
   "type": "module",
   "private": true,
   "devDependencies": {
     "@types/bun": "latest"
-  },
-  "scripts": {
-    "dev": "bun index.ts"
   },
   "peerDependencies": {
     "typescript": "^5"
