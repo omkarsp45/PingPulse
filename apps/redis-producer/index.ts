@@ -1,23 +1,22 @@
-import { createClient } from 'redis';
+import { xAddBulk } from 'redisstream/client';
 import { prismaClient } from 'store/client'
 
-const client = createClient();
-
-client.on('error', err => console.log('Redis Client Error', err));
-
-await client.connect();
-
-async function xAdd() {
-    const website = await prismaClient.website.findMany({
+async function main() {
+    let websites = await prismaClient.website.findMany({
         select: {
-            id: true,
-            url: true
+            url: true,
+            id: true
         }
     })
 
-    console.log(website)
+    await xAddBulk(websites.map(w => ({
+        url: w.url,
+        id: w.id
+    })));
 }
 
-xAdd()
+setInterval(() => {
+    main()
+}, 3 * 1000 * 60)
 
-client.destroy()
+main()
