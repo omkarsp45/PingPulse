@@ -42,17 +42,15 @@ export async function xAddBulk(websites: WebsiteEvent[]) {
 export async function xReadGroup(consumerGroup: string, workerId: string): Promise<MessageType[] | undefined> {
 
     const res = await client.xReadGroup(
-        consumerGroup, workerId, {
-        key: STREAM_NAME,
-        id: '>'
-    }, {
-        'COUNT': 5
-    }
+        consumerGroup,
+        workerId,
+        [{ key: 'pingpulse:website', id: '>' }], // '>' means new messages
+        { COUNT: 3 } // Read 1 message
     );
     if (res == null) return;
     // @ts-ignore
     let messages: MessageType[] = res[0].messages;
-
+    console.log(messages);
     return messages;
 }
 

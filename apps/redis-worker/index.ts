@@ -13,7 +13,7 @@ async function main() {
             continue;
         }
 
-        let promises = response.map(({ message }) => fetchWebsite(message.url, message.id))
+        let promises = response.map(({ message }) => { console.log(message.url); fetchWebsite(message.url, message.id) })
         await Promise.all(promises);
         console.log(promises.length);
 
