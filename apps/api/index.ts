@@ -1,14 +1,23 @@
+
 import express from 'express'
 import jwt from 'jsonwebtoken'
 import { prismaClient } from "store/client"
 import { AuthInput } from './types';
-import { authMiddleware } from './middleware';
+import { authMiddleware } from "./middleware.ts";
+import { ensureUserExists } from './ensureUserExists.ts';
+import cors from 'cors'
 
 const app = express()
 app.use(express.json());
+app.use(cors({
+    origin: ["http://localhost:3000"],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
 app.post("/website", authMiddleware, async (req, res) => {
-    const userId = req.userId;
+    const { userId } = (req as any).auth;
+    await ensureUserExists(userId);
     if (!req.body.url) {
         res.status(411).json({
             message: "URL not found"
@@ -52,6 +61,29 @@ app.get("/status/:websiteId", authMiddleware, async (req, res) => {
                 take: 1
             }
         }
+    })
+})
+
+
+app.get("/websites", authMiddleware, async (req, res) => {
+    const { userId } = (req as any).auth;
+    await ensureUserExists(userId);
+    const websites = await prismaClient.website.findMany({
+        where: {
+            userId: userId
+        }, include: {
+            ticks: {
+                orderBy: [
+                    {
+                        createdAt: 'desc'
+                    }
+                ],
+                take: 1
+            }
+        }
+    })
+    res.status(200).json({
+        websites: websites
     })
 })
 
@@ -116,6 +148,6 @@ app.post("/user/signin", async (req, res) => {
     }
 })
 
-app.listen(process.env.PORT || 3001, () => {
-    console.log("Started backend on port 3000");
+app.listen(3001, () => {
+    console.log("Started backend on port 3001");
 })

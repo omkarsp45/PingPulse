@@ -1,6 +1,10 @@
+require('dotenv').config({ path: __dirname + '/.env' });
 import { createClient } from 'redis';
 
-const client = createClient();
+console.log(process.env.REDIS_URL)
+const client = createClient({
+    url: process.env.REDIS_URL
+});
 
 client.on('error', err => console.log('Redis Client Error', err));
 
@@ -40,7 +44,6 @@ export async function xAddBulk(websites: WebsiteEvent[]) {
 }
 
 export async function xReadGroup(consumerGroup: string, workerId: string): Promise<MessageType[] | undefined> {
-
     const res = await client.xReadGroup(
         consumerGroup,
         workerId,
@@ -61,3 +64,8 @@ async function xAck(consumerGroup: string, eventId: string) {
 export async function xAckBulk(consumerGroup: string, eventIds: string[]) {
     eventIds.map(eventId => xAck(consumerGroup, eventId));
 }
+
+process.on('SIGINT', async () => {
+    await client.quit();
+    process.exit();
+});

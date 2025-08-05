@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { UserButton } from '@clerk/nextjs';
-import { 
-  ArrowLeft, 
-  Globe, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
+import {
+  ArrowLeft,
+  Globe,
+  CheckCircle,
+  XCircle,
+  Clock,
   TrendingUp,
   Settings,
   Zap,
@@ -59,17 +59,17 @@ export default function WebsiteDetail() {
       // Generate mock uptime data for last 30 minutes (10 data points, 3 minutes apart)
       const mockUptimeData: UptimeData[] = [];
       const now = new Date();
-      
+
       for (let i = 9; i >= 0; i--) {
         const time = new Date(now.getTime() - i * 3 * 60 * 1000);
         const responseTime = Math.floor(Math.random() * 200) + 150; // 150-350ms
         const status = Math.random() > 0.1 ? 'up' : 'down'; // 90% uptime
-        
+
         mockUptimeData.push({
-          time: time.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
+          time: time.toLocaleTimeString('en-US', {
+            hour: '2-digit',
             minute: '2-digit',
-            hour12: false 
+            hour12: false
           }),
           responseTime: status === 'up' ? responseTime : 0,
           status
@@ -87,17 +87,17 @@ export default function WebsiteDetail() {
     const interval = setInterval(() => {
       const now = new Date();
       const newDataPoint: UptimeData = {
-        time: now.toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
+        time: now.toLocaleTimeString('en-US', {
+          hour: '2-digit',
           minute: '2-digit',
-          hour12: false 
+          hour12: false
         }),
         responseTime: Math.floor(Math.random() * 200) + 150,
         status: Math.random() > 0.1 ? 'up' : 'down'
       };
 
       setUptimeData(prev => [...prev.slice(1), newDataPoint]);
-      
+
       // Update website status
       if (website) {
         setWebsite(prev => prev ? {
@@ -225,12 +225,11 @@ export default function WebsiteDetail() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Current Status</p>
-                <p className={`text-2xl font-bold ${
-                  website.status === 'up' ? 'text-green-500' : 
+                <p className={`text-2xl font-bold ${website.status === 'up' ? 'text-green-500' :
                   website.status === 'down' ? 'text-red-500' : 'text-yellow-500'
-                }`}>
-                  {website.status === 'up' ? 'Online' : 
-                   website.status === 'down' ? 'Offline' : 'Checking'}
+                  }`}>
+                  {website.status === 'up' ? 'Online' :
+                    website.status === 'down' ? 'Offline' : 'Checking'}
                 </p>
               </div>
               <Activity className="w-8 h-8 text-blue-500" />
@@ -273,23 +272,23 @@ export default function WebsiteDetail() {
               </div>
             </div>
           </div>
-          
+
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={uptimeData}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis 
-                  dataKey="time" 
+                <XAxis
+                  dataKey="time"
                   className="text-xs"
                   tick={{ fontSize: 12 }}
                 />
-                <YAxis 
+                <YAxis
                   className="text-xs"
                   tick={{ fontSize: 12 }}
                   label={{ value: 'Response Time (ms)', angle: -90, position: 'insideLeft' }}
                 />
-                <Tooltip 
-                  contentStyle={{ 
+                <Tooltip
+                  contentStyle={{
                     backgroundColor: 'hsl(var(--card))',
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '8px'
@@ -300,9 +299,9 @@ export default function WebsiteDetail() {
                   ]}
                   labelFormatter={(label) => `Time: ${label}`}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="responseTime" 
+                <Line
+                  type="monotone"
+                  dataKey="responseTime"
                   stroke="#10b981"
                   strokeWidth={2}
                   dot={(props: any) => {
@@ -346,11 +345,10 @@ export default function WebsiteDetail() {
                     <span className="text-sm text-muted-foreground">
                       {check.status === 'up' ? `${check.responseTime}ms` : 'Failed'}
                     </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      check.status === 'up' 
-                        ? 'text-green-500 bg-green-50 dark:bg-green-900/20'
-                        : 'text-red-500 bg-red-50 dark:bg-red-900/20'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${check.status === 'up'
+                      ? 'text-green-500 bg-green-50 dark:bg-green-900/20'
+                      : 'text-red-500 bg-red-50 dark:bg-red-900/20'
+                      }`}>
                       {check.status.toUpperCase()}
                     </span>
                   </div>

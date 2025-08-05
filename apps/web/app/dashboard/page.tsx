@@ -1,23 +1,25 @@
 "use client"
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UserButton } from '@clerk/nextjs';
-import { 
-  Plus, 
-  Globe, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
+import { useAuth } from "@clerk/nextjs";
+
+import {
+  Plus,
+  Globe,
+  CheckCircle,
+  XCircle,
+  Clock,
   TrendingUp,
   Settings,
   BarChart3,
   Zap
 } from 'lucide-react';
 import { ThemeToggle } from '../components/theme-toggle';
+import { prismaClient } from 'store/client';
 
 interface Website {
   id: string;
-  name: string;
   url: string;
   status: 'up' | 'down' | 'checking';
   uptime: number;
@@ -26,52 +28,52 @@ interface Website {
 }
 
 export default function Dashboard() {
-  const [websites, setWebsites] = useState<Website[]>([
-    {
-      id: '1',
-      name: 'My Portfolio',
-      url: 'https://myportfolio.com',
-      status: 'up',
-      uptime: 99.9,
-      responseTime: 245,
-      lastChecked: '2 minutes ago'
-    },
-    {
-      id: '2',
-      name: 'E-commerce Store',
-      url: 'https://mystore.com',
-      status: 'up',
-      uptime: 99.5,
-      responseTime: 312,
-      lastChecked: '1 minute ago'
-    },
-    {
-      id: '3',
-      name: 'API Service',
-      url: 'https://api.myservice.com',
-      status: 'down',
-      uptime: 98.2,
-      responseTime: 0,
-      lastChecked: '30 seconds ago'
-    }
-  ]);
+  const { getToken } = useAuth()
+  const [websites, setWebsites] = useState<Website[]>([]);
+
+  const fetchWebsites = async () => {
+    const token = await getToken();
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/websites`, {
+      method: 'GET',
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    });
+    const data: any[] = (await res.json()).websites;
+    console.log(data);
+    setWebsites(
+      data.map((website) => ({
+        id: website.id,
+        url: website.url,
+        status: website.ticks[0] ? (website.ticks[0].status == "Up" ? "up" : "down") : "checking",
+        uptime: 0,
+        responseTime: website.ticks[0] ? (website.ticks[0].response_time_ms) : 0,
+        lastChecked: website.ticks[0] ? (website.ticks[0].createdAt) : new Date().toLocaleTimeString()
+      }))
+    );
+  };
+
+  useEffect(() => {
+    fetchWebsites();
+  }, []);
 
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newWebsite, setNewWebsite] = useState({ name: '', url: '' });
+  const [newWebsite, setNewWebsite] = useState({ url: '' });
 
-  const handleAddWebsite = () => {
-    if (newWebsite.name && newWebsite.url) {
-      const website: Website = {
-        id: Date.now().toString(),
-        name: newWebsite.name,
-        url: newWebsite.url,
-        status: 'checking',
-        uptime: 0,
-        responseTime: 0,
-        lastChecked: 'Just added'
-      };
-      setWebsites([...websites, website]);
-      setNewWebsite({ name: '', url: '' });
+  const handleAddWebsite = async () => {
+    const token = await getToken();
+    if (newWebsite.url) {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/website`, {
+        method: 'POST',
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ url: newWebsite.url })
+      });
+      fetchWebsites();
+      setNewWebsite({ url: '' });
       setShowAddModal(false);
     }
   };
@@ -105,7 +107,7 @@ export default function Dashboard() {
   const upWebsites = websites.filter(w => w.status === 'up').length;
   const downWebsites = websites.filter(w => w.status === 'down').length;
   const avgUptime = websites.reduce((acc, w) => acc + w.uptime, 0) / websites.length || 0;
-  const avgResponseTime = websites.filter(w => w.status === 'up').reduce((acc, w) => acc + w.responseTime, 0) / upWebsites || 0;
+  // const avgResponseTime = websites.filter(w => w.status === 'up').reduce((acc, w) => acc + w.responseTime, 0) / upWebsites || 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -216,8 +218,7 @@ export default function Dashboard() {
                     <div className="flex items-center space-x-4">
                       {getStatusIcon(website.status)}
                       <div>
-                        <h3 className="font-medium">{website.name}</h3>
-                        <p className="text-sm text-muted-foreground">{website.url}</p>
+                        <h3 className="text-sm text-muted-foreground">{website.url}</h3>
                       </div>
                     </div>
 
@@ -226,7 +227,7 @@ export default function Dashboard() {
                         <p className="text-sm font-medium">{website.uptime}%</p>
                         <p className="text-xs text-muted-foreground">Uptime</p>
                       </div>
-                      
+
                       <div className="text-center">
                         <p className="text-sm font-medium">
                           {website.status === 'up' ? `${website.responseTime}ms` : '-'}
@@ -258,19 +259,8 @@ export default function Dashboard() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-card p-6 rounded-lg border border-border w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold mb-4">Add New Website</h3>
-            
+
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Website Name</label>
-                <input
-                  type="text"
-                  value={newWebsite.name}
-                  onChange={(e) => setNewWebsite({ ...newWebsite, name: e.target.value })}
-                  placeholder="My Website"
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              
               <div>
                 <label className="block text-sm font-medium mb-2">Website URL</label>
                 <input

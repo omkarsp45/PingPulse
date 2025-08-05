@@ -6,19 +6,17 @@ const REGION_ID = "e950164a-100f-4650-a032-950f6a0ea2e3";
 const WORKER_ID = "india-1";
 
 async function main() {
-    while (1) {
-        const response = await xReadGroup(REGION_ID, WORKER_ID);
+    const response = await xReadGroup(REGION_ID, WORKER_ID);
 
-        if (!response) {
-            continue;
-        }
-
-        let promises = response.map(({ message }) => { console.log(message.url); fetchWebsite(message.url, message.id) })
-        await Promise.all(promises);
-        console.log(promises.length);
-
-        xAckBulk(REGION_ID, response.map(({ id }) => id));
+    if (!response) {
+        return;
     }
+
+    let promises = response.map(({ message }) => { console.log(message.url); fetchWebsite(message.url, message.id) })
+    await Promise.all(promises);
+    console.log(promises.length);
+
+    xAckBulk(REGION_ID, response.map(({ id }) => id));
 }
 
 async function fetchWebsite(url: string, websiteId: string) {
@@ -55,4 +53,8 @@ async function fetchWebsite(url: string, websiteId: string) {
     })
 }
 
-main();
+setInterval(() => {
+    main()
+}, 1 * 1000 * 60)   // change this in production (very high value kept for dev)
+
+main()
