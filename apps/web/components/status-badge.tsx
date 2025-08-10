@@ -2,26 +2,26 @@ import { cn } from '@/lib/utils';
 import { CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 
 interface StatusBadgeProps {
-  status: 'up' | 'down' | 'warning';
+  status: 'up' | 'down' | 'checking';
   size?: 'sm' | 'md' | 'lg';
 }
 
 export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
   const icons = {
     up: CheckCircle,
-    warning: AlertTriangle,
+    checking: AlertTriangle,
     down: XCircle,
   };
 
   const colors = {
     up: 'text-green-600 bg-green-50 border-green-200',
-    warning: 'text-yellow-600 bg-yellow-50 border-yellow-200',
+    checking: 'text-yellow-600 bg-yellow-50 border-yellow-200',
     down: 'text-red-600 bg-red-50 border-red-200',
   };
 
   const darkColors = {
     up: 'dark:text-green-400 dark:bg-green-900/20 dark:border-green-800',
-    warning: 'dark:text-yellow-400 dark:bg-yellow-900/20 dark:border-yellow-800',
+    checking: 'dark:text-yellow-400 dark:bg-yellow-900/20 dark:border-yellow-800',
     down: 'dark:text-red-400 dark:bg-red-900/20 dark:border-red-800',
   };
 

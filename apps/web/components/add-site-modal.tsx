@@ -8,7 +8,11 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Loader2 } from 'lucide-react';
 
-export function AddSiteModal() {
+interface AddSiteModalProps {
+  onWebsiteAdded?: () => void;
+}
+
+export function AddSiteModal({ onWebsiteAdded }: AddSiteModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -35,15 +39,20 @@ export function AddSiteModal() {
         });
         setFormData({ name: '', url: '' });
         setIsOpen(false);
-        // Trigger a refresh of the dashboard data
-        window.location.reload();
+
+        // Call the callback to refresh the dashboard
+        if (onWebsiteAdded) {
+          onWebsiteAdded();
+        }
       } else {
-        throw new Error('Failed to add website');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add website');
       }
     } catch (error) {
+      console.error('Error adding website:', error);
       toast({
         title: 'Error',
-        description: 'Failed to add website. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to add website. Please try again.',
         variant: 'destructive',
       });
     } finally {

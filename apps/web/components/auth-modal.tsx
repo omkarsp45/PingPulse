@@ -17,36 +17,52 @@ interface AuthModalProps {
 export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, loading } = useAuth();
+  const [isSignup, setIsSignup] = useState(false);
+  const { login, signup, loading } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const success = await login(email, password);
+    const success = isSignup 
+      ? await signup(email, password)
+      : await login(email, password);
     
     if (success) {
       toast({
-        title: 'Welcome back!',
-        description: 'You have been successfully logged in.',
+        title: isSignup ? 'Account created successfully!' : 'Welcome back!',
+        description: isSignup 
+          ? 'Your account has been created and you are now logged in.'
+          : 'You have been successfully logged in.',
       });
       onClose();
       setEmail('');
       setPassword('');
+      setIsSignup(false);
     } else {
       toast({
-        title: 'Login failed',
-        description: 'Please check your credentials and try again.',
+        title: isSignup ? 'Signup failed' : 'Login failed',
+        description: isSignup 
+          ? 'Failed to create account. Please try again.'
+          : 'Please check your credentials and try again.',
         variant: 'destructive',
       });
     }
+  };
+
+  const toggleMode = () => {
+    setIsSignup(!isSignup);
+    setEmail('');
+    setPassword('');
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Sign in to PingPulse</DialogTitle>
+          <DialogTitle>
+            {isSignup ? 'Create Account' : 'Sign in to PingPulse'}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -54,7 +70,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <Input
               id="email"
               type="email"
-              placeholder="user@example.com"
+              placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -65,7 +81,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <Input
               id="password"
               type="password"
-              placeholder="password"
+              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -73,11 +89,21 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Sign In
+            {isSignup ? 'Create Account' : 'Sign In'}
           </Button>
-          <p className="text-xs text-muted-foreground text-center">
-            Demo credentials: user@example.com / password
-          </p>
+          
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={toggleMode}
+              className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              {isSignup 
+                ? 'Already have an account? Sign in' 
+                : "Don't have an account? Sign up"
+              }
+            </button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

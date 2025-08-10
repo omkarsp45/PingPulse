@@ -39,7 +39,7 @@ export function Navigation() {
               >
                 {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
-              
+
               {loading ? null : user ? (
                 <div className="flex items-center space-x-4">
                   <Link href="/dashboard">
@@ -51,7 +51,7 @@ export function Navigation() {
                 </div>
               ) : (
                 <Button size="sm" onClick={() => setIsAuthModalOpen(true)}>
-                  Sign In
+                  Sign In / Sign Up
                 </Button>
               )}
             </div>
@@ -121,7 +121,7 @@ export function Navigation() {
                   }}
                   className="block w-full text-left px-3 py-2 text-sm font-medium hover:text-blue-600 transition-colors"
                 >
-                  Sign In
+                  Sign In / Sign Up
                 </button>
               )}
             </div>
@@ -129,9 +129,9 @@ export function Navigation() {
         )}
       </nav>
 
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
       />
     </>
   );

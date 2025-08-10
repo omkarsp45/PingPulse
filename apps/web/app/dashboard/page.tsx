@@ -9,12 +9,28 @@ import { AddSiteModal } from '@/components/add-site-modal';
 import { DashboardSkeleton } from '@/components/loading-skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, Clock, TrendingUp, AlertCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+interface BackendWebsite {
+  id: string;
+  name: string;
+  url: string;
+  timeAdded: string;
+  userId: string;
+  ticks: Array<{
+    id: string;
+    response_time_ms: number;
+    status: 'Up' | 'Down' | 'Checking';
+    createdAt: string;
+  }>;
+}
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [websites, setWebsites] = useState<Website[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -31,11 +47,42 @@ export default function DashboardPage() {
     try {
       const response = await fetch('/api/websites');
       if (response.ok) {
-        const data = await response.json();
-        setWebsites(data);
+        const backendWebsites: BackendWebsite[] = await response.json();
+
+        // Transform backend data to frontend format
+        const transformedWebsites: Website[] = backendWebsites.map(website => {
+          const latestTick = website.ticks[0];
+          const status = latestTick?.status === 'Up' ? 'up' :
+            latestTick?.status === 'Down' ? 'down' : 'checking';
+
+          return {
+            id: website.id,
+            name: website.name,
+            url: website.url,
+            status,
+            uptime: status === 'up' ? 100 : status === 'down' ? 0 : 50, // Simplified for now
+            responseTime: latestTick?.response_time_ms || 0,
+            lastCheck: latestTick?.createdAt || website.timeAdded,
+            createdAt: website.timeAdded,
+          };
+        });
+
+        setWebsites(transformedWebsites);
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: 'Error fetching websites',
+          description: errorData.error || 'Failed to load websites',
+          variant: 'destructive',
+        });
       }
     } catch (error) {
       console.error('Failed to fetch websites:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load websites. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -58,11 +105,11 @@ export default function DashboardPage() {
   const totalWebsites = websites.length;
   const upWebsites = websites.filter(w => w.status === 'up').length;
   const downWebsites = websites.filter(w => w.status === 'down').length;
-  const averageUptime = websites.length > 0 
-    ? websites.reduce((acc, w) => acc + w.uptime, 0) / websites.length 
+  const averageUptime = websites.length > 0
+    ? websites.reduce((acc, w) => acc + w.uptime, 0) / websites.length
     : 0;
-  const averageResponseTime = websites.length > 0 
-    ? websites.filter(w => w.responseTime > 0).reduce((acc, w) => acc + w.responseTime, 0) / websites.filter(w => w.responseTime > 0).length 
+  const averageResponseTime = websites.length > 0
+    ? websites.filter(w => w.responseTime > 0).reduce((acc, w) => acc + w.responseTime, 0) / websites.filter(w => w.responseTime > 0).length
     : 0;
 
   return (
@@ -77,7 +124,7 @@ export default function DashboardPage() {
               Monitor your websites and track their performance
             </p>
           </div>
-          <AddSiteModal />
+          <AddSiteModal onWebsiteAdded={fetchWebsites} />
         </div>
 
         {/* Stats Cards */}
@@ -137,7 +184,7 @@ export default function DashboardPage() {
               <p className="text-gray-600 dark:text-gray-400 mb-4">
                 Add your first website to start monitoring its uptime and performance.
               </p>
-              <AddSiteModal />
+              <AddSiteModal onWebsiteAdded={fetchWebsites} />
             </CardContent>
           </Card>
         )}

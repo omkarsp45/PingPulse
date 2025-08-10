@@ -12,9 +12,24 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, ExternalLink, Clock, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 interface WebsiteDetailsClientProps {
   websiteId: string;
+}
+
+interface BackendWebsite {
+  id: string;
+  name: string;
+  url: string;
+  timeAdded: string;
+  userId: string;
+  ticks: Array<{
+    id: string;
+    response_time_ms: number;
+    status: 'Up' | 'Down' | 'Other';
+    createdAt: string;
+  }>;
 }
 
 export function WebsiteDetailsClient({ websiteId }: WebsiteDetailsClientProps) {
@@ -24,6 +39,7 @@ export function WebsiteDetailsClient({ websiteId }: WebsiteDetailsClientProps) {
   const [responseData, setResponseData] = useState<ResponseTimeData[]>([]);
   const [statusHistory, setStatusHistory] = useState<StatusHistory[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -45,21 +61,54 @@ export function WebsiteDetailsClient({ websiteId }: WebsiteDetailsClientProps) {
       ]);
 
       if (websiteRes.ok) {
-        const websiteData = await websiteRes.json();
-        setWebsite(websiteData);
+        const backendWebsite: BackendWebsite = await websiteRes.json();
+
+        // Transform backend data to frontend format
+        const latestTick = backendWebsite.ticks[0];
+        const status = latestTick?.status === 'Up' ? 'up' :
+          latestTick?.status === 'Down' ? 'down' : 'checking';
+
+        const transformedWebsite: Website = {
+          id: backendWebsite.id,
+          name: backendWebsite.name,
+          url: backendWebsite.url,
+          status,
+          uptime: status === 'up' ? 100 : status === 'down' ? 0 : 50,
+          responseTime: latestTick?.response_time_ms || 0,
+          lastCheck: latestTick?.createdAt || backendWebsite.timeAdded,
+          createdAt: backendWebsite.timeAdded,
+        };
+
+        setWebsite(transformedWebsite);
+      } else {
+        const errorData = await websiteRes.json();
+        toast({
+          title: 'Error fetching website',
+          description: errorData.error || 'Failed to load website details',
+          variant: 'destructive',
+        });
       }
 
       if (responseRes.ok) {
         const responseData = await responseRes.json();
         setResponseData(responseData);
+      } else {
+        console.error('Failed to fetch response times');
       }
 
       if (historyRes.ok) {
         const historyData = await historyRes.json();
         setStatusHistory(historyData);
+      } else {
+        console.error('Failed to fetch status history');
       }
     } catch (error) {
       console.error('Failed to fetch website data:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load website data. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -115,9 +164,9 @@ export function WebsiteDetailsClient({ websiteId }: WebsiteDetailsClientProps) {
               </div>
               <div className="flex items-center text-gray-600 dark:text-gray-400">
                 <ExternalLink className="h-4 w-4 mr-2" />
-                <a 
-                  href={website.url} 
-                  target="_blank" 
+                <a
+                  href={website.url}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-blue-600 dark:hover:text-blue-400"
                 >
@@ -140,7 +189,7 @@ export function WebsiteDetailsClient({ websiteId }: WebsiteDetailsClientProps) {
             {/* Response Time Chart */}
             <Card>
               <CardHeader>
-                <CardTitle>Response Time (Last 30 minutes)</CardTitle>
+                <CardTitle>Response Time (Last 10 checks - 30 minutes)</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponseChart data={responseData} />
@@ -159,7 +208,7 @@ export function WebsiteDetailsClient({ websiteId }: WebsiteDetailsClientProps) {
                       <div className="flex items-center space-x-3">
                         <div className="flex items-center">
                           {day.status === 'up' && <CheckCircle className="h-5 w-5 text-green-600" />}
-                          {day.status === 'warning' && <AlertCircle className="h-5 w-5 text-yellow-600" />}
+                          {day.status === 'checking' && <AlertCircle className="h-5 w-5 text-yellow-600" />}
                           {day.status === 'down' && <AlertCircle className="h-5 w-5 text-red-600" />}
                         </div>
                         <div>

@@ -1,6 +1,7 @@
 import { xAddBulk } from 'redisstream/client';
 import { prismaClient } from 'store/client'
 
+// every 3 minutes push available websites to redis
 async function main() {
     let websites = await prismaClient.website.findMany({
         select: {

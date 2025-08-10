@@ -5,6 +5,7 @@ import { prismaClient } from "store/client";
 const REGION_ID = "e950164a-100f-4650-a032-950f6a0ea2e3";
 const WORKER_ID = "india-1";
 
+// keeps on pulling websites from queue to check its uptime. 
 async function main() {
     const response = await xReadGroup(REGION_ID, WORKER_ID);
 

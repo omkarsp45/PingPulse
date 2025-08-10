@@ -15,7 +15,7 @@ export const mockWebsites: Website[] = [
     id: '2',
     name: 'API Server',
     url: 'https://api.example.com',
-    status: 'warning',
+    status: 'checking',
     uptime: 98.5,
     responseTime: 892,
     lastCheck: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
@@ -46,11 +46,11 @@ export const mockWebsites: Website[] = [
 export const generateResponseTimeData = (websiteId: string): ResponseTimeData[] => {
   const data: ResponseTimeData[] = [];
   const now = new Date();
-  
+
   for (let i = 29; i >= 0; i--) {
     const timestamp = new Date(now.getTime() - i * 60 * 1000);
     const website = mockWebsites.find(w => w.id === websiteId);
-    
+
     if (website?.status === 'down') {
       data.push({
         timestamp: timestamp.toISOString(),
@@ -67,23 +67,23 @@ export const generateResponseTimeData = (websiteId: string): ResponseTimeData[] 
       });
     }
   }
-  
+
   return data;
 };
 
 export const generateStatusHistory = (websiteId: string): StatusHistory[] => {
   const data: StatusHistory[] = [];
   const now = new Date();
-  
+
   for (let i = 29; i >= 0; i--) {
     const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
     data.push({
       date: date.toISOString().split('T')[0],
-      status: Math.random() > 0.1 ? 'up' : Math.random() > 0.7 ? 'warning' : 'down',
+      status: Math.random() > 0.1 ? 'up' : Math.random() > 0.7 ? 'checking' : 'down',
       uptime: Math.random() * 5 + 95,
       incidents: Math.floor(Math.random() * 3),
     });
   }
-  
+
   return data;
 };

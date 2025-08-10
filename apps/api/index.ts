@@ -9,11 +9,7 @@ import cors from 'cors'
 
 const app = express()
 app.use(express.json());
-app.use(cors({
-    origin: ["http://localhost:3000"],
-    credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"]
-}));
+app.use(cors());
 
 app.post("/website", authMiddleware, async (req, res) => {
     const { userId } = (req as any).auth;
@@ -27,6 +23,7 @@ app.post("/website", authMiddleware, async (req, res) => {
         const website = await prismaClient.website.create({
             data: {
                 url: req.body.url,
+                name: req.body.name || req.body.url, // Use provided name or fallback to URL
                 timeAdded: new Date(),
                 userId: userId
             }
@@ -45,11 +42,12 @@ app.post("/website", authMiddleware, async (req, res) => {
 
 app.get("/status/:websiteId", authMiddleware, async (req, res) => {
     const websiteId = req.params.websiteId;
+    const { userId } = (req as any).auth;
 
     const website = await prismaClient.website.findMany({
         where: {
             id: websiteId,
-            userId: req.userId
+            userId: userId
         },
         include: {
             ticks: {
@@ -58,10 +56,54 @@ app.get("/status/:websiteId", authMiddleware, async (req, res) => {
                         createdAt: 'desc'
                     }
                 ],
-                take: 1
+                take: 10
             }
         }
     })
+
+    if (!website || website.length === 0) {
+        return res.status(404).json({ message: 'Website not found' });
+    }
+
+    res.status(200).json({ website: website[0] });
+})
+
+app.get("/response-times/:websiteId", authMiddleware, async (req, res) => {
+    const websiteId = req.params.websiteId;
+    const { userId } = (req as any).auth;
+
+    const website = await prismaClient.website.findMany({
+        where: {
+            id: websiteId,
+            userId: userId
+        },
+        include: {
+            ticks: {
+                orderBy: [
+                    {
+                        createdAt: 'desc'
+                    }
+                ],
+                take: 10
+            }
+        }
+    })
+
+    if (!website || website.length === 0) {
+        return res.status(404).json({ message: 'Website not found' });
+    }
+
+    // Transform ticks to response time data format
+    const responseData = website[0]?.ticks?.map(tick => ({
+        timestamp: tick.createdAt,
+        responseTime: tick.response_time_ms,
+        status: tick.status.toLowerCase()
+    })) || [];
+
+    // Reverse to show oldest first
+    responseData.reverse();
+
+    res.status(200).json(responseData);
 })
 
 

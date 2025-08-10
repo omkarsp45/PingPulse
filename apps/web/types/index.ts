@@ -2,7 +2,7 @@ export interface Website {
   id: string;
   name: string;
   url: string;
-  status: 'up' | 'down' | 'warning';
+  status: 'up' | 'down' | 'checking';
   uptime: number;
   responseTime: number;
   lastCheck: string;
@@ -12,12 +12,12 @@ export interface Website {
 export interface ResponseTimeData {
   timestamp: string;
   responseTime: number;
-  status: 'up' | 'down' | 'warning';
+  status: 'up' | 'down' | 'checking';
 }
 
 export interface StatusHistory {
   date: string;
-  status: 'up' | 'down' | 'warning';
+  status: 'up' | 'down' | 'checking';
   uptime: number;
   incidents: number;
 }
@@ -31,6 +31,7 @@ export interface User {
 export interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
+  signup: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   loading: boolean;
 }

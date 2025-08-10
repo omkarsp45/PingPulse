@@ -23,6 +23,7 @@ model User {
 model Website {
   id        String        @id @default(uuid())
   url       String
+  name      String
   timeAdded DateTime
   ticks     WebsiteTick[]
   User      User?         @relation(fields: [userId], references: [id])
