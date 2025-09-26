@@ -35,6 +35,53 @@ router.post("/", authMiddleware, async (req, res) => {
     }
 });
 
+// Get all websites for a user
+router.get("/", authMiddleware, async (req, res) => {
+    const { userId } = (req as any).auth;
+    try {
+        const websites = await prismaClient.website.findMany({
+            where: {
+                userId: userId
+            },
+            include: {
+                ticks: {
+                    orderBy: [
+                        {
+                            createdAt: 'desc'
+                        }
+                    ],
+                    take: 1 // Get only the latest tick for each website
+                }
+            },
+            orderBy: {
+                timeAdded: 'desc'
+            }
+        });
+
+        const websitesWithStatus = websites.map(website => {
+            const latestTick = website.ticks[0] || null;
+            return {
+                id: website.id,
+                url: website.url,
+                name: website.name,
+                timeAdded: website.timeAdded,
+                latestStatus: latestTick ? latestTick.status : 'No data',
+                latestResponseTime: latestTick ? latestTick.response_time_ms : null,
+                latestCheckedAt: latestTick ? latestTick.createdAt : null
+            };
+        });
+
+        res.status(200).json({
+            websites: websitesWithStatus
+        });
+    } catch (e) {
+        res.status(500).json({
+            message: "Error fetching websites",
+            Error: e
+        });
+    }
+});
+
 // Get status of a website by ID
 router.get("/status/:websiteId", authMiddleware, async (req, res) => {
     const websiteId = req.params.websiteId;
