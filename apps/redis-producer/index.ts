@@ -10,7 +10,7 @@ async function main() {
         }
     })
 
-    await xAddBulk(websites.map(w => ({
+    await xAddBulk(websites.map((w: { url: string; id: string }) => ({
         url: w.url,
         id: w.id
     })));
