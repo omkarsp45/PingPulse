@@ -3,30 +3,56 @@ import { cookies } from 'next/headers';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+// Warn in server logs if running on Vercel but still pointing to localhost (will always fail in production)
+if (process.env.VERCEL && API_BASE_URL.includes('localhost')) {
+  console.warn('[api/websites] WARNING: API_BASE_URL resolves to localhost on Vercel. Set NEXT_PUBLIC_API_URL to your deployed API URL.');
+}
+
 export async function GET() {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const token = cookieStore.get('auth-token')?.value;
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const response = await fetch(`${API_BASE_URL}/website`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      return NextResponse.json({ error: 'Failed to fetch websites' }, { status: response.status });
+    let upstream: Response;
+    try {
+      upstream = await fetch(`${API_BASE_URL}/website`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        // Avoid caching stale site list
+        cache: 'no-store'
+      });
+    } catch (netErr) {
+      console.error('[api/websites] Network error contacting upstream', API_BASE_URL, netErr);
+      return NextResponse.json({ error: 'Upstream API unreachable. Check NEXT_PUBLIC_API_URL.' }, { status: 502 });
     }
 
-    const data = await response.json();
-    return NextResponse.json(data.websites || []);
+    if (!upstream.ok) {
+      let bodyText: string | undefined;
+      try { bodyText = await upstream.text(); } catch {}
+      console.error('[api/websites] Upstream non-OK', upstream.status, bodyText);
+      return NextResponse.json({ error: 'Upstream API error', status: upstream.status }, { status: upstream.status });
+    }
+
+    // Try parse JSON safely
+    let raw: any;
+    try {
+      raw = await upstream.json();
+    } catch (parseErr) {
+      console.error('[api/websites] Failed to parse upstream JSON', parseErr);
+      return NextResponse.json({ error: 'Invalid upstream response' }, { status: 502 });
+    }
+
+    // Accept either array or { websites: [...] }
+    const websites = Array.isArray(raw) ? raw : (raw?.websites ?? []);
+    return NextResponse.json(websites);
   } catch (error) {
-    console.error('Error fetching websites:', error);
+    console.error('[api/websites] Unexpected handler error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
