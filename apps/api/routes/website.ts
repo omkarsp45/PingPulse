@@ -58,7 +58,19 @@ router.get("/", authMiddleware, async (req, res) => {
             }
         });
 
-        const websitesWithStatus = websites.map(website => {
+        type WebsiteWithTicks = {
+            id: string;
+            url: string;
+            name: string;
+            timeAdded: Date;
+            ticks: Array<{
+                createdAt: Date;
+                status: string;
+                response_time_ms: number | null;
+            }>;
+        };
+
+        const websitesWithStatus = websites.map((website: WebsiteWithTicks) => {
             const latestTick = website.ticks[0] || null;
             return {
                 id: website.id,
