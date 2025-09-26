@@ -44,17 +44,35 @@ export async function xAddBulk(websites: WebsiteEvent[]) {
 }
 
 export async function xReadGroup(consumerGroup: string, workerId: string): Promise<MessageType[] | undefined> {
-    const res = await client.xReadGroup(
-        consumerGroup,
-        workerId,
-        [{ key: 'pingpulse:website', id: '>' }], // '>' means new messages
-        { COUNT: 3 } // Read 1 message
-    );
-    if (res == null) return;
-    // @ts-ignore
-    let messages: MessageType[] = res[0].messages;
-    console.log(messages);
-    return messages;
+    try {
+        // Try to create the consumer group if it doesn't exist
+        await client.xGroupCreate(STREAM_NAME, consumerGroup, '0', { MKSTREAM: true });
+    } catch (error: any) {
+        // If the group already exists, that's fine - we can ignore this error
+        if (!error.message.includes('BUSYGROUP')) {
+            console.log('Error creating consumer group:', error.message);
+        }
+    }
+
+    try {
+        const res = await client.xReadGroup(
+            consumerGroup,
+            workerId,
+            [{ key: 'pingpulse:website', id: '>' }], // '>' means new messages
+            { COUNT: 3 } // Read 3 messages
+        );
+        if (res == null) return;
+        // @ts-ignore
+        let messages: MessageType[] = res[0].messages;
+        console.log(messages);
+        return messages;
+    } catch (error: any) {
+        if (error.message.includes('NOGROUP')) {
+            console.log('Consumer group does not exist, will be created on next call');
+            return undefined;
+        }
+        throw error;
+    }
 }
 
 async function xAck(consumerGroup: string, eventId: string) {

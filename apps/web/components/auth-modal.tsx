@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,14 +12,20 @@ import { Loader2 } from 'lucide-react';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialMode?: 'signin' | 'signup';
 }
 
-export function AuthModal({ isOpen, onClose }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSignup, setIsSignup] = useState(false);
+  const [isSignup, setIsSignup] = useState(initialMode === 'signup');
   const { login, signup, loading } = useAuth();
   const { toast } = useToast();
+
+  // Update isSignup when initialMode changes
+  useEffect(() => {
+    setIsSignup(initialMode === 'signup');
+  }, [initialMode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { Website, ResponseTimeData, StatusHistory } from '@/types';
 import { StatusBadge } from '@/components/status-badge';
-import { ResponseChart } from '@/components/response-chart';
+import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,14 +23,16 @@ interface BackendWebsite {
   name: string;
   url: string;
   timeAdded: string;
-  userId: string;
-  ticks: Array<{
-    id: string;
-    response_time_ms: number;
-    status: 'Up' | 'Down' | 'Other';
-    createdAt: string;
-  }>;
+  latestStatus: 'Up' | 'Down' | 'No data';
+  latestResponseTime: number | null;
+  latestCheckedAt: string | null;
 }
+
+// Disable SSR for Recharts to prevent hydration mismatches due to ResponsiveContainer measurements
+const ResponseChart = dynamic(
+  () => import('@/components/response-chart').then((m) => m.ResponseChart),
+  { ssr: false }
+);
 
 export function WebsiteDetailsClient({ websiteId }: WebsiteDetailsClientProps) {
   const { user, loading: authLoading } = useAuth();
@@ -64,9 +66,8 @@ export function WebsiteDetailsClient({ websiteId }: WebsiteDetailsClientProps) {
         const backendWebsite: BackendWebsite = await websiteRes.json();
 
         // Transform backend data to frontend format
-        const latestTick = backendWebsite.ticks[0];
-        const status = latestTick?.status === 'Up' ? 'up' :
-          latestTick?.status === 'Down' ? 'down' : 'checking';
+        const status = backendWebsite.latestStatus === 'Up' ? 'up' :
+          backendWebsite.latestStatus === 'Down' ? 'down' : 'checking';
 
         const transformedWebsite: Website = {
           id: backendWebsite.id,
@@ -74,8 +75,8 @@ export function WebsiteDetailsClient({ websiteId }: WebsiteDetailsClientProps) {
           url: backendWebsite.url,
           status,
           uptime: status === 'up' ? 100 : status === 'down' ? 0 : 50,
-          responseTime: latestTick?.response_time_ms || 0,
-          lastCheck: latestTick?.createdAt || backendWebsite.timeAdded,
+          responseTime: backendWebsite.latestResponseTime || 0,
+          lastCheck: backendWebsite.latestCheckedAt || backendWebsite.timeAdded,
           createdAt: backendWebsite.timeAdded,
         };
 
@@ -91,7 +92,7 @@ export function WebsiteDetailsClient({ websiteId }: WebsiteDetailsClientProps) {
 
       if (responseRes.ok) {
         const responseData = await responseRes.json();
-        setResponseData(responseData);
+        setResponseData(responseData.responseTimes || []);
       } else {
         console.error('Failed to fetch response times');
       }
@@ -199,11 +200,11 @@ export function WebsiteDetailsClient({ websiteId }: WebsiteDetailsClientProps) {
             {/* Status History */}
             <Card>
               <CardHeader>
-                <CardTitle>Status History (Last 30 days)</CardTitle>
+                <CardTitle>Status History</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {statusHistory.slice(0, 10).map((day, index) => (
+                  {statusHistory.slice(0, 10).reverse().map((day, index) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="flex items-center">
@@ -264,27 +265,41 @@ export function WebsiteDetailsClient({ websiteId }: WebsiteDetailsClientProps) {
             <Card>
               <CardHeader>
                 <CardTitle>Quick Stats</CardTitle>
+                <div className="text-xs text-amber-600 dark:text-amber-400 mt-1 italic">
+                  📊 Database and Server: "Trust me bro"
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center space-x-3">
                   <TrendingUp className="h-5 w-5 text-green-600" />
                   <div>
                     <div className="font-semibold">99.9%</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">30-day uptime</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      30-day uptime
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Clock className="h-5 w-5 text-blue-600" />
                   <div>
                     <div className="font-semibold">245ms</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Avg response time</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Avg response time
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <AlertCircle className="h-5 w-5 text-yellow-600" />
                   <div>
                     <div className="font-semibold">2</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Incidents this month</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Incidents this month
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="text-xs text-blue-700 dark:text-blue-300 text-center">
+                    💡 Running on free tier resources! These stats are placeholders to keep our database and server happy. Real stats will come soon!🚀
                   </div>
                 </div>
               </CardContent>

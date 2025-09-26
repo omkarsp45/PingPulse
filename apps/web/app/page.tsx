@@ -1,10 +1,24 @@
+'use client';
+
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Activity, Shield, Zap, Globe, TrendingUp, Star } from 'lucide-react';
+import { AuthModal } from '@/components/auth-modal';
+import { useAuth } from '@/contexts/auth-context';
 import Link from 'next/link';
 
 export default function LandingPage() {
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
+  const { user, loading } = useAuth();
+
+  const handleAuthModal = (mode: 'signin' | 'signup') => {
+    setAuthMode(mode);
+    setIsAuthModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -24,14 +38,34 @@ export default function LandingPage() {
             Monitor your websites 24/7 with real-time alerts, detailed analytics, 
             and comprehensive uptime reporting. Get notified instantly when something goes wrong.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="text-lg px-8 py-3">
-              Start Free Trial
-            </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-3">
-              View Demo
-            </Button>
-          </div>
+          {!loading && !user && (
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                size="lg" 
+                className="text-lg px-8 py-3"
+                onClick={() => handleAuthModal('signup')}
+              >
+                Start Free Trial
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="text-lg px-8 py-3"
+                onClick={() => handleAuthModal('signin')}
+              >
+                Sign In
+              </Button>
+            </div>
+          )}
+          {!loading && user && (
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/dashboard">
+                <Button size="lg" className="text-lg px-8 py-3">
+                  Go to Dashboard
+                </Button>
+              </Link>
+            </div>
+          )}
           <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div>
               <div className="text-3xl font-bold text-blue-600 mb-2">99.9%</div>
@@ -189,7 +223,11 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Button className="w-full" variant={plan.popular ? 'default' : 'outline'}>
+                  <Button 
+                    className="w-full" 
+                    variant={plan.popular ? 'default' : 'outline'}
+                    onClick={() => handleAuthModal('signup')}
+                  >
                     Start Free Trial
                   </Button>
                 </CardContent>
@@ -262,9 +300,6 @@ export default function LandingPage() {
             Join thousands of businesses that trust PingPulse to keep their websites online.
             Start your free trial today.
           </p>
-          <Button size="lg" variant="secondary" className="text-lg px-8 py-3">
-            Start Free Trial - No Credit Card Required
-          </Button>
         </div>
       </section>
 
@@ -286,6 +321,12 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authMode}
+      />
     </div>
   );
 }

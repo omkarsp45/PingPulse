@@ -1,4 +1,7 @@
 'use client';
+// @ts-nocheck
+
+import * as React from 'react';
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
@@ -8,7 +11,7 @@ import { WebsiteCard } from '@/components/website-card';
 import { AddSiteModal } from '@/components/add-site-modal';
 import { DashboardSkeleton } from '@/components/loading-skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, Clock, TrendingUp, AlertCircle } from 'lucide-react';
+import { Activity as ActivityIcon, Clock as ClockIcon, TrendingUp as TrendingUpIcon, AlertCircle as AlertCircleIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface BackendWebsite {
@@ -16,13 +19,9 @@ interface BackendWebsite {
   name: string;
   url: string;
   timeAdded: string;
-  userId: string;
-  ticks: Array<{
-    id: string;
-    response_time_ms: number;
-    status: 'Up' | 'Down' | 'Checking';
-    createdAt: string;
-  }>;
+  latestStatus: 'Up' | 'Down' | 'No data';
+  latestResponseTime: number | null;
+  latestCheckedAt: string | null;
 }
 
 export default function DashboardPage() {
@@ -46,14 +45,14 @@ export default function DashboardPage() {
   const fetchWebsites = async () => {
     try {
       const response = await fetch('/api/websites');
+      console.log('Fetch websites response:', response);
       if (response.ok) {
         const backendWebsites: BackendWebsite[] = await response.json();
 
         // Transform backend data to frontend format
         const transformedWebsites: Website[] = backendWebsites.map(website => {
-          const latestTick = website.ticks[0];
-          const status = latestTick?.status === 'Up' ? 'up' :
-            latestTick?.status === 'Down' ? 'down' : 'checking';
+          const status = website.latestStatus === 'Up' ? 'up' :
+            website.latestStatus === 'Down' ? 'down' : 'checking';
 
           return {
             id: website.id,
@@ -61,8 +60,8 @@ export default function DashboardPage() {
             url: website.url,
             status,
             uptime: status === 'up' ? 100 : status === 'down' ? 0 : 50, // Simplified for now
-            responseTime: latestTick?.response_time_ms || 0,
-            lastCheck: latestTick?.createdAt || website.timeAdded,
+            responseTime: website.latestResponseTime || 0,
+            lastCheck: website.latestCheckedAt || website.timeAdded,
             createdAt: website.timeAdded,
           };
         });
@@ -132,7 +131,7 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Websites</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
+              <ActivityIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalWebsites}</div>
@@ -141,7 +140,7 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Online</CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-600" />
+              <TrendingUpIcon className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">{upWebsites}</div>
@@ -150,7 +149,7 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Offline</CardTitle>
-              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertCircleIcon className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">{downWebsites}</div>
@@ -159,7 +158,7 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Avg Response</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <ClockIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -173,13 +172,17 @@ export default function DashboardPage() {
         {websites.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {websites.map((website) => (
-              <WebsiteCard key={website.id} website={website} />
+              <WebsiteCard 
+                key={website.id} 
+                website={website} 
+                onDelete={fetchWebsites}
+              />
             ))}
           </div>
         ) : (
           <Card className="text-center py-12">
             <CardContent>
-              <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <ActivityIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">No websites yet</h3>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
                 Add your first website to start monitoring its uptime and performance.

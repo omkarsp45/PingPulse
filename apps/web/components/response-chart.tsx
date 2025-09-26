@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ResponseTimeData } from '@/types';
 import { format } from 'date-fns';
@@ -9,6 +10,14 @@ interface ResponseChartProps {
 }
 
 export function ResponseChart({ data }: ResponseChartProps) {
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+  // Return null on first client render to match SSR output and avoid hydration mismatches
+  return null;
+  }
+
   // Filter out invalid data and ensure dates are valid
   const validData = data.filter(item => {
     if (!item.timestamp) return false;

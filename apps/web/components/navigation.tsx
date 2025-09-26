@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
@@ -10,9 +10,15 @@ import { Moon, Sun, Menu, X, Activity } from 'lucide-react';
 
 export function Navigation() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
   const { user, logout, loading } = useAuth();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <>
@@ -37,7 +43,13 @@ export function Navigation() {
                 size="sm"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               >
-                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {!mounted ? (
+                  <div className="h-4 w-4" />
+                ) : theme === 'dark' ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
               </Button>
 
               {loading ? null : user ? (
@@ -50,9 +62,29 @@ export function Navigation() {
                   </Button>
                 </div>
               ) : (
-                <Button size="sm" onClick={() => setIsAuthModalOpen(true)}>
-                  Sign In / Sign Up
-                </Button>
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    data-auth-mode="signin"
+                    onClick={() => {
+                      setAuthMode('signin');
+                      setIsAuthModalOpen(true);
+                    }}
+                  >
+                    Sign In
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    data-auth-mode="signup"
+                    onClick={() => {
+                      setAuthMode('signup');
+                      setIsAuthModalOpen(true);
+                    }}
+                  >
+                    Sign Up
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -63,7 +95,13 @@ export function Navigation() {
                 size="sm"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               >
-                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {!mounted ? (
+                  <div className="h-4 w-4" />
+                ) : theme === 'dark' ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
               </Button>
               <Button
                 variant="ghost"
@@ -114,15 +152,28 @@ export function Navigation() {
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={() => {
-                    setIsAuthModalOpen(true);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="block w-full text-left px-3 py-2 text-sm font-medium hover:text-blue-600 transition-colors"
-                >
-                  Sign In / Sign Up
-                </button>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => {
+                      setAuthMode('signin');
+                      setIsAuthModalOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="block w-full text-left px-3 py-2 text-sm font-medium hover:text-blue-600 transition-colors"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAuthMode('signup');
+                      setIsAuthModalOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="block w-full text-left px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors font-semibold"
+                  >
+                    Sign Up
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -132,6 +183,7 @@ export function Navigation() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authMode}
       />
     </>
   );
