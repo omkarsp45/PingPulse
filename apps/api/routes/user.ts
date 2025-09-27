@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { AuthInput } from '../types.ts';
 
 const router = express.Router();
-
+ 
 // Signup Route
 router.post("/signup", async (req, res) => {
     const data = AuthInput.safeParse(req.body);
