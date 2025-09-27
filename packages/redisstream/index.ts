@@ -1,4 +1,11 @@
-require('dotenv').config({ path: __dirname + '/.env' });
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+dotenv.config({ path: __dirname + '/.env' });
 import { createClient } from 'redis';
 
 console.log(process.env.REDIS_URL)
@@ -8,7 +15,10 @@ const client = createClient({
 
 client.on('error', err => console.log('Redis Client Error', err));
 
-await client.connect();
+// Initialize client connection
+(async () => {
+    await client.connect();
+})();
 
 const STREAM_NAME = 'pingpulse:website'
 
