@@ -1,135 +1,224 @@
-# Turborepo starter
+# PingPulse 📊
 
-This Turborepo starter is maintained by the Turborepo core team.
+A comprehensive website monitoring platform that helps you track your websites' uptime, performance, and availability 24/7. Get instant notifications when your sites go down and detailed analytics to optimize your infrastructure.
 
-## Using this example
+## ✨ Features
 
-Run the following command:
+- **Real-time Monitoring**: Monitor your websites 24/7 with customizable check intervals
+- **Instant Alerts**: Get notified immediately when your websites go down or experience issues
+- **Performance Tracking**: Track response times and performance metrics across all your sites
+- **Global Monitoring**: Check your websites from multiple regions around the world
+- **Detailed Analytics**: Comprehensive reports and analytics with historical data
+- **User Management**: Multi-user support with authentication and authorization
+- **Modern UI**: Beautiful, responsive dashboard built with Next.js and Tailwind CSS
+- **Scalable Architecture**: Built on Redis streams for high-performance message processing
 
-```sh
-npx create-turbo@latest
+## 🏗️ Architecture
+
+PingPulse is built as a modern monorepo using Turborepo with the following architecture:
+
+### Core Applications
+
+- **Web App** (`apps/web`): Next.js frontend with authentication, dashboard, and monitoring interface
+- **API Server** (`apps/api`): Express.js backend handling user management and website operations  
+- **Redis Producer** (`apps/redis-producer`): Service that queues websites for monitoring checks
+- **Redis Worker** (`apps/redis-worker`): Background workers that perform actual website monitoring
+
+### Shared Packages
+
+- **Store** (`packages/store`): Prisma-based database layer with PostgreSQL
+- **Redis Stream** (`packages/redisstream`): Redis client utilities for stream processing
+- **UI Components** (`packages/ui`): Shared React components
+- **TypeScript Config** (`packages/typescript-config`): Shared TypeScript configurations
+- **ESLint Config** (`packages/eslint-config`): Shared linting configurations
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 18 or higher
+- PostgreSQL database
+- Redis server
+- npm/yarn/pnpm
+
+### Installation
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/omkarsp45/PingPulse.git
+cd PingPulse
 ```
 
-## What's inside?
-
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+2. **Install dependencies**
+```bash
+npm install
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+3. **Set up environment variables**
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+Create `.env` files in the required apps/packages:
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+**packages/store/.env**
+```env
+DATABASE_URL="postgresql://username:password@localhost:5432/pingpulse"
 ```
 
-### Develop
-
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+**packages/redisstream/.env**
+```env
+REDIS_URL="redis://localhost:6379"
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+4. **Set up the database**
+```bash
+cd packages/store
+npx prisma migrate dev
+npx prisma generate
 ```
 
-### Remote Caching
+5. **Start the development servers**
+```bash
+# Start all services
+npm run dev
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+# Or start individual services
+npm run dev --filter=web      # Frontend only
+npm run dev --filter=api      # API only
+npm run dev --filter=redis-producer  # Producer only
+npm run dev --filter=redis-worker    # Worker only
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+## 📦 Project Structure
 
 ```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+pingpulse/
+├── apps/
+│   ├── api/                 # Express.js API server
+│   │   ├── routes/          # API routes (user, website)
+│   │   ├── middleware.ts    # Authentication middleware
+│   │   └── prisma/          # Database migrations
+│   ├── redis-producer/      # Website queue producer
+│   ├── redis-worker/        # Website monitoring worker
+│   └── web/                 # Next.js frontend
+│       ├── app/             # App router pages
+│       ├── components/      # React components
+│       ├── contexts/        # React contexts
+│       └── lib/             # Utilities
+├── packages/
+│   ├── store/               # Database layer (Prisma)
+│   ├── redisstream/         # Redis utilities
+│   ├── ui/                  # Shared UI components
+│   ├── typescript-config/   # TypeScript configurations
+│   └── eslint-config/       # ESLint configurations
+└── scripts/                 # Build and deployment scripts
 ```
 
-## Useful Links
+## 🔧 Development
 
-Learn more about the power of Turborepo:
+### Building the project
+```bash
+npm run build
+```
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+### Running linting
+```bash
+npm run lint
+```
+
+### Type checking
+```bash
+npm run check-types
+```
+
+### Code formatting
+```bash
+npm run format
+```
+
+## 🗄️ Database Schema
+
+The application uses PostgreSQL with Prisma ORM. Key models include:
+
+- **User**: User accounts with authentication
+- **Website**: Monitored websites with URL and metadata
+- **WebsiteTick**: Individual monitoring check results
+- **Region**: Geographic regions for global monitoring
+
+## 📊 Monitoring Flow
+
+1. **Redis Producer** queries the database every 3 minutes for active websites
+2. **Website URLs** are added to Redis streams for processing
+3. **Redis Workers** consume the stream and perform HTTP checks
+4. **Results** (response time, status) are stored in PostgreSQL
+5. **Web Dashboard** displays real-time data and historical analytics
+6. **Old data** is automatically cleaned up (older than 1 hour)
+
+## 🚀 Deployment
+
+### Using Docker (Recommended)
+
+```bash
+# Build and run with Docker Compose
+docker-compose up -d
+```
+
+### Manual Deployment
+
+1. **Build the project**
+```bash
+npm run build
+```
+
+2. **Set up production database**
+```bash
+cd packages/store
+npx prisma migrate deploy
+```
+
+3. **Start the services**
+```bash
+# Start API server
+cd apps/api && npm start
+
+# Start Redis producer
+cd apps/redis-producer && npm start
+
+# Start Redis worker(s)
+cd apps/redis-worker && npm start
+
+# Deploy web app to Vercel/Netlify
+cd apps/web && npm run build
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🛠️ Built With
+
+- **Frontend**: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui
+- **Backend**: Express.js, Node.js, TypeScript
+- **Database**: PostgreSQL, Prisma ORM
+- **Queue System**: Redis Streams
+- **Monorepo**: Turborepo
+- **Authentication**: Custom JWT implementation
+- **Deployment**: Vercel, VM
+
+## 📞 Support
+
+If you have any questions or need help, please:
+
+- Open an issue on GitHub
+- Check the documentation in the `/docs` folder
+- Reach out to the maintainers
+
+---
+
+Made with ❤️ by [omkarsp45](https://github.com/omkarsp45)
