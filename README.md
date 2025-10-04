@@ -154,13 +154,6 @@ The application uses PostgreSQL with Prisma ORM. Key models include:
 
 ## 🚀 Deployment
 
-### Using Docker (Recommended)
-
-```bash
-# Build and run with Docker Compose
-docker-compose up -d
-```
-
 ### Manual Deployment
 
 1. **Build the project**
